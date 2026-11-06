@@ -1,0 +1,51 @@
+apiVersion: appthrust.io/v1alpha1
+kind: ApplicationStackDefinition
+metadata:
+  name: inference
+spec:
+  display:
+    title: Inference
+    description: OpenAI-compatible chat completions (Qwen2.5-0.5B-Instruct) inside
+      the Project. GPU required (nvidia-gpu).
+    category: assist
+    iconRef:
+      name: sparkles
+  # Publisher appends release versions here; retain the seed as the compatibility floor.
+  versions:
+  - name: 0.1.0
+    images:
+      web: ghcr.io/appthrust/platform/inference@sha256:ae48f2ee8ce2b8adaa7fed7b9e2c45e95f09d365aa27a4da19d7015a3e5748b0
+    stream: '0.1'
+    default: true
+    served: true
+  updatePolicy:
+    default: pinned
+    allowed:
+    - pinned
+    - follow
+  components:
+  - id: web
+    definitionRef:
+      name: web-service
+      version: v1
+    defaultValues:
+      tenancy: Dedicated
+      port: 8000
+      minScale: 1
+      internalService: true
+      scratchVolumes:
+      - mountPath: /home/nonroot
+        sizeLimit: 1Gi
+      readinessProbePath: /health
+      livenessProbePath: /healthz
+      accelerator:
+        kind: nvidia-gpu
+        count: 1
+      metrics:
+        path: /metrics
+        port: 8000
+  publish:
+    hostnameLabel: inference
+  provides:
+  - chat-completions.openai/v1
+  releaseIdentityEnvPrefix: INFERENCE
