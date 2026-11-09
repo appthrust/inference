@@ -16,7 +16,7 @@ upstream advertising the baked model; `/releasez` reports release identity.
 
 Use Go 1.26 or newer and Bun 1.4.1. The public Go SDK is
 [`github.com/appthrust/appserver-go`](https://github.com/appthrust/appserver-go)
-at `v0.1.0`, without a platform checkout or module replacement.
+at `v0.3.0`, without a platform checkout or module replacement.
 
 ```sh
 go build ./...
@@ -43,6 +43,9 @@ and starts `/inference-server`. Its catalog requests one `nvidia-gpu` and a
 writable scratch volume at `/home/nonroot`.
 
 ## Release
+
+Next release: **`v0.3.0`**, upgrading the shared server SDK to v0.3.0.
+The catalog publisher appends the built image; existing version digests stay immutable.
 
 Create and push a new SemVer tag, starting with `v0.2.0` because the compatibility
 floor already owns `0.1.0`:
