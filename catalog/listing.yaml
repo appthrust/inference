@@ -1,0 +1,90 @@
+locales:
+  en:
+    title: Inference
+    tagline: Generate chat replies on a GPU inside your Project, called with the same requests your apps already send to OpenAI-compatible APIs.
+    overview: |
+      Inference serves chat completions from Qwen2.5-0.5B-Instruct, a small instruction-tuned model, on a GPU inside your Project. It is for teams that want their own apps to generate text without sending prompts to an outside AI service.
+
+      Apps call it the way they call any OpenAI-compatible API: POST /v1/chat/completions returns a reply, streamed piece by piece when the request asks for streaming, and GET /v1/models returns the model name together with its prompt budget. The model field can be left out; Inference fills it in.
+
+      When AI Gateway is installed in the same Project, it can route chat requests to Inference as a Project-local provider under the Project AI policy. A request may use up to 3,072 prompt tokens, with 1,024 tokens kept for the reply. Up to four completions run at the same time, and a request stops after 120 seconds.
+
+      Inference needs a GPU node. Each branch uses one NVIDIA GPU, so production plus staging uses two; the install dialog shows the count before anything starts. The model ships inside the app and runs without internet access, so prompts and replies are processed inside the Project. Inference has no screen of its own: you install, update and remove it from the Marketplace.
+  ja:
+    title: Inference
+    tagline: OpenAI 互換の API と同じ呼び出し方で、プロジェクト内の GPU を使ったチャット応答をアプリから生成できます。
+    overview: |
+      Inference は、指示応答向けの小型モデル Qwen2.5-0.5B-Instruct を使い、プロジェクト内の GPU でチャット応答を返すアプリです。プロンプトを外部の AI サービスに送らずに、自分たちのアプリで文章を生成したいチーム向けです。
+
+      アプリからは、OpenAI 互換の API と同じ方法で呼び出します。POST /v1/chat/completions で応答を受け取り、ストリーミングを指定すると少しずつ返ってきます。GET /v1/models では、モデル名とプロンプトに使えるトークン数が分かります。リクエストで model を省略しても、Inference が補います。
+
+      同じプロジェクトに AI Gateway を入れている場合は、プロジェクトの AI ポリシーに沿って、AI Gateway がチャットのリクエストをプロジェクト内のプロバイダーとして Inference に振り分けられます。1 回のリクエストで使えるプロンプトは 3,072 トークンまでで、応答用に 1,024 トークンを確保しています。同時に処理する応答は 4 件までで、1 件あたり 120 秒で打ち切られます。
+
+      Inference には GPU ノードが必要です。ブランチごとに NVIDIA GPU を 1 基使うため、本番とステージングの両方を動かすと 2 基になります。必要な数はインストール前のダイアログに表示されます。モデルはアプリに同梱されていてインターネットに接続せずに動くので、プロンプトと応答はプロジェクトの中で処理されます。Inference に専用の画面はなく、インストール・更新・削除はマーケットプレイスから行います。
+highlights:
+  - screenshot: marketplace-detail
+    locales:
+      en:
+        title: OpenAI-compatible chat API
+        body: Existing code for OpenAI-compatible APIs works with /v1/chat/completions and /v1/models. Replies can be streamed, and the model name can be omitted.
+      ja:
+        title: OpenAI 互換のチャット API
+        body: OpenAI 互換の API 向けに書いたコードを、そのまま /v1/chat/completions と /v1/models に向けられます。応答はストリーミングでも受け取れ、モデル名は省略できます。
+  - screenshot: install-gpu
+    locales:
+      en:
+        title: See the GPU count before installing
+        body: The install dialog lists the NVIDIA GPUs each branch needs and the total, so you know what the Project must provide before the app starts.
+      ja:
+        title: 必要な GPU をインストール前に確認
+        body: インストールのダイアログに、ブランチごとに必要な NVIDIA GPU の数と合計が表示されます。アプリを動かす前に、プロジェクトに用意すべき数が分かります。
+  - screenshot: install-production-only
+    locales:
+      en:
+        title: One GPU with production only
+        body: Staging runs as a separate copy with its own GPU. Choose production only to run a single copy on one GPU.
+      ja:
+        title: 本番だけなら GPU は 1 基
+        body: ステージングは専用の GPU を使う別のコピーとして動きます。「本番のみ」を選ぶと、1 基の GPU で 1 つだけ動かせます。
+  - screenshot: version-select
+    locales:
+      en:
+        title: Pin a version or follow updates
+        body: Pick the version at install time and either keep it pinned or let new versions in the same release line install automatically.
+      ja:
+        title: バージョンは固定も自動更新も選べます
+        body: インストール時にバージョンを選び、そのまま固定するか、同じリリースラインの新しいバージョンを自動で入れるかを決められます。
+  - screenshot: catalog-card
+    locales:
+      en:
+        title: Stays inside the Project
+        body: The model ships with the app and runs without internet access. With AI Gateway installed, chat requests can be routed to Inference under the Project AI policy.
+      ja:
+        title: プロジェクトの中で完結
+        body: モデルはアプリに同梱されており、インターネットに接続せずに動きます。AI Gateway を入れていれば、プロジェクトの AI ポリシーに沿ってチャットのリクエストを Inference に振り分けられます。
+screenshots:
+  - name: marketplace-detail
+    file: marketplace-detail.webp
+    alt:
+      en: "Dashboard Marketplace page for Inference: the Assist badge, the description of OpenAI-compatible chat completions with Qwen2.5-0.5B-Instruct that requires a GPU, an Install button, and versions 0.1.0 and 0.2.0 (default)."
+      ja: "ダッシュボードのマーケットプレイスにある Inference のページ。Assist のバッジ、Qwen2.5-0.5B-Instruct による OpenAI 互換のチャット応答で GPU が必要という説明、インストールボタン、バージョン 0.1.0 と 0.2.0（既定）が並んでいます。"
+  - name: install-gpu
+    file: install-gpu.webp
+    alt:
+      en: "Install dialog for Inference with version 0.2.0, pinned updates and production plus staging selected; the accelerator table shows 1 NVIDIA GPU for production, 1 for staging, 2 in total."
+      ja: "Inference のインストールダイアログ。バージョン 0.2.0、バージョンを固定、本番とステージングを選んだ状態で、アクセラレータ欄に本番 1 NVIDIA GPU、ステージング 1 NVIDIA GPU、合計 2 NVIDIA GPU と表示されています。"
+  - name: install-production-only
+    file: install-production-only.webp
+    alt:
+      en: "The same install dialog with production only selected; the accelerator table now shows 1 NVIDIA GPU for production and 1 in total."
+      ja: "同じインストールダイアログで「本番のみ」を選んだ状態。アクセラレータ欄は本番 1 NVIDIA GPU、合計 1 NVIDIA GPU に変わっています。"
+  - name: version-select
+    file: version-select.webp
+    alt:
+      en: "Version menu open in the install dialog, listing 0.1.0 and 0.2.0 (recommended) with 0.2.0 checked, above the pinned-version and branch options."
+      ja: "インストールダイアログでバージョンの一覧を開いた状態。0.1.0 と 0.2.0（推奨）が並び、0.2.0 にチェックが付いています。下にはバージョン固定とブランチの選択肢があります。"
+  - name: catalog-card
+    file: catalog-card.webp
+    alt:
+      en: "Catalog section of the Marketplace: AI Gateway and Embedding marked as installed, and the Inference card showing version 0.2.0, follow or pin updates, and an Install button."
+      ja: "マーケットプレイスのカタログ欄。AI Gateway と Embedding はインストール済みで、Inference のカードにはバージョン 0.2.0、更新方法（自動で更新 / バージョンを固定）、インストールボタンが表示されています。"
