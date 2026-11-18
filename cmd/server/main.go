@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -13,6 +14,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/appthrust/appserver-go/appserver/requestlog"
 )
 
 const (
@@ -65,6 +68,14 @@ func main() {
 	}
 }
 
+func newHTTPServer(upstream *url.URL, ready func() bool, logOutput io.Writer) *http.Server {
+	return &http.Server{
+		Handler:           requestlog.Wrap(newHandler(upstream, ready), requestlog.Options{Service: "inference", Output: logOutput}),
+		ReadHeaderTimeout: 10 * time.Second, ReadTimeout: requestTimeout,
+		WriteTimeout: requestTimeout + 5*time.Second, IdleTimeout: 60 * time.Second,
+	}
+}
+
 func serve(ctx context.Context, listen string, cfg config) error {
 	listener, err := net.Listen("tcp", listen)
 	if err != nil {
@@ -78,11 +89,7 @@ func serve(ctx context.Context, listen string, cfg config) error {
 		defer close(childDone)
 		s.Run(childCtx)
 	}()
-	server := &http.Server{
-		Handler:           newHandler(cfg.upstream, s.Ready),
-		ReadHeaderTimeout: 10 * time.Second, ReadTimeout: requestTimeout,
-		WriteTimeout: requestTimeout + 5*time.Second, IdleTimeout: 60 * time.Second,
-	}
+	server := newHTTPServer(cfg.upstream, s.Ready, os.Stderr)
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	log.Printf("inference-server listening on %s (project %s)", listener.Addr(), cfg.projectID)

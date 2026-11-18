@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -31,6 +32,36 @@ func requestForTest(h http.Handler, method, path, body string) *httptest.Respons
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(body)))
 	return w
+}
+
+func TestRequestLogRecordsInterruptedProxyStream(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Content-Length", "1024")
+		_, _ = io.WriteString(w, "data: private-stream-content\n\n")
+	}))
+	defer upstream.Close()
+	u, err := url.Parse(upstream.URL)
+	require.NoError(t, err)
+	var output bytes.Buffer
+	server := newHTTPServer(u, func() bool { return true }, &output)
+	r := httptest.NewRequest(http.MethodPost, "/v1/chat/completions?private-query", strings.NewReader(`{"stream":true}`))
+	// ReverseProxy only aborts an interrupted copy when running in a server context.
+	r = r.WithContext(context.WithValue(r.Context(), http.ServerContextKey, server))
+	w := httptest.NewRecorder()
+	require.PanicsWithValue(t, http.ErrAbortHandler, func() { server.Handler.ServeHTTP(w, r) })
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var entry struct {
+		Service, Outcome, Reason string
+		Status                   int
+	}
+	require.NoError(t, json.Unmarshal(output.Bytes(), &entry))
+	require.Equal(t, "inference", entry.Service)
+	require.Equal(t, http.StatusOK, entry.Status)
+	require.Equal(t, "interrupted", entry.Outcome)
+	require.Equal(t, "proxy_aborted", entry.Reason)
+	require.NotContains(t, output.String(), "private-")
 }
 
 func TestProxyForcesBakedModelAndOnlyForwardsPublicRoutes(t *testing.T) {

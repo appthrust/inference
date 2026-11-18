@@ -14,6 +14,7 @@ import (
 
 	"github.com/appthrust/appserver-go/appserver/httpx"
 	"github.com/appthrust/appserver-go/appserver/releaseidentity"
+	"github.com/appthrust/appserver-go/appserver/requestlog"
 )
 
 const (
@@ -46,6 +47,9 @@ func newHandler(upstream *url.URL, ready func() bool) http.Handler {
 		FlushInterval: -1, // Forward SSE chunks immediately, without buffering a completion.
 		ModifyResponse: func(r *http.Response) error {
 			r.Header.Set("Cache-Control", "no-store")
+			if r.StatusCode >= http.StatusBadRequest {
+				requestlog.SetOutcome(r.Request, "failed", "upstream_http_error")
+			}
 			if r.Request.Method == http.MethodGet && r.Request.URL.Path == "/v1/models" && r.StatusCode == http.StatusOK {
 				return advertisePromptBudget(r)
 			}
@@ -58,6 +62,18 @@ func newHandler(upstream *url.URL, ready func() bool) http.Handler {
 				writeError(w, http.StatusBadGateway, "inference_upstream_unavailable", "The inference upstream could not complete this request")
 			}
 		},
+	}
+	forward := func(w http.ResponseWriter, r *http.Request) {
+		// ReverseProxy aborts on a copy failure after committing the status.
+		// Record the interruption without recovering or changing the panic.
+		completed := false
+		defer func() {
+			if !completed {
+				requestlog.SetOutcome(r, "interrupted", "proxy_aborted")
+			}
+		}()
+		proxy.ServeHTTP(w, r)
+		completed = true
 	}
 	slots := make(chan struct{}, maxInFlight)
 	modelJSON, _ := json.Marshal(servedModel)
@@ -114,13 +130,13 @@ func newHandler(upstream *url.URL, ready func() bool) http.Handler {
 		r = r.WithContext(ctx)
 		r.Body = io.NopCloser(bytes.NewReader(payload))
 		r.ContentLength = int64(len(payload))
-		proxy.ServeHTTP(w, r)
+		forward(w, r)
 	})
 	for _, path := range []string{"/v1/models", "/metrics"} {
 		mux.HandleFunc("GET "+path, func(w http.ResponseWriter, r *http.Request) {
 			ctx, cancel := context.WithTimeout(r.Context(), requestTimeout)
 			defer cancel()
-			proxy.ServeHTTP(w, r.WithContext(ctx))
+			forward(w, r.WithContext(ctx))
 		})
 	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
